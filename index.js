@@ -72,7 +72,7 @@ io.on("connection", (socket) => {
   socket.on("create-transport", async (_, callback) => {
     try {
       const transport = await router.createWebRtcTransport({
-        listenIps: [{ ip: "0.0.0.0", announcedIp: null }],
+        listenIps: [{ ip: "0.0.0.0", announcedIp: "vc.clevdoc.com" }],
         enableUdp: true,
         enableTcp: true,
       });
@@ -143,6 +143,20 @@ io.on("connection", (socket) => {
   });
 
   // Handle user joining a room
+ 
+
+  socket.on("BE-check-user", ({ roomId, userName }) => {
+    let error = false;
+
+    const clients = rooms[roomId] || [];
+    clients.forEach((client) => {
+      if (socketList[client]?.userName === userName) {
+        error = true;
+      }
+    });
+    socket.emit("FE-error-user-exist", { error });
+  });
+
   socket.on("BE-join-room", ({ roomId, userName }) => {
     socket.join(roomId);
     socketList[socket.id] = { userName, video: true, audio: true };
@@ -156,18 +170,6 @@ io.on("connection", (socket) => {
     }));
 
     io.to(roomId).emit("FE-user-join", users);
-  });
-
-  socket.on("BE-check-user", ({ roomId, userName }) => {
-    let error = false;
-
-    const clients = rooms[roomId] || [];
-    clients.forEach((client) => {
-      if (socketList[client]?.userName === userName) {
-        error = true;
-      }
-    });
-    socket.emit("FE-error-user-exist", { error });
   });
 
   socket.on("BE-call-user", ({ userToCall, from, signal }) => {
